@@ -3,49 +3,185 @@ import streamlit as st
 import joblib
 import numpy as np
 
-model = joblib.load("BHP_Model.pkl")
-scaler= joblib.load("BHP_Scaler.pkl")
+# --------------------------------------------------
+# Page Configuration
+# --------------------------------------------------
+st.set_page_config(
+    page_title="Boston House Price Prediction",
+    page_icon="🏠",
+    layout="centered"
+)
 
-st.title("BOSTON HOUSE PRICE PREDICTION APP")
+# --------------------------------------------------
+# Violet Theme + FIXED INPUT CONTROLS
+# --------------------------------------------------
+st.markdown("""
+<style>
+body {
+    background-color: #f5f3ff;
+}
 
-st.markdown("plese enter the details given below and press predict button")
+/* Title */
+h1 {
+    color: #6d28d9;
+    text-align: center;
+    font-weight: 900;
+    font-size: 50px;
+    margin-bottom: 4px;
+}
 
-# ['LSTAT', 'INDUS', 'NOX', 'PTRATIO', 'RM', 'TAX', 'DIS', 'AGE']
-# ['MEDV']
+/* Subtitle */
+.subtitle {
+    text-align: center;
+    color: #4b5563;
+    font-size: 18px;
+    margin-bottom: 35px;
+}
+
+/* Labels */
+label {
+    color: black !important;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* Input field */
+.stNumberInput input {
+    background-color: #6d28d9 !important;
+    color: white !important;
+    border-radius: 10px;
+    border: 2px solid #6d28d9;
+    padding: 12px;
+    font-size: 15px;
+}
+
+/* Focus effect */
+.stNumberInput input:focus {
+    outline: none !important;
+    border: 2px solid black !important;
+}
+
+/* + and - buttons (VISIBLE FIX) */
+.stNumberInput button {
+    background-color: black !important;
+    color: white !important;
+    border-radius: 6px;
+    border: none;
+}
+
+/* Hover on + - */
+.stNumberInput button:hover {
+    background-color: #111 !important;
+}
+
+/* Predict button */
+.stButton > button {
+    width: 60%;
+    display: block;
+    margin: 30px auto;
+    background-color: black;
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: 10px;
+    height: 3.2em;
+    letter-spacing: 0.5px;
+}
+
+.stButton > button:hover {
+    background-color: #111;
+}
+
+/* Divider */
+hr {
+    border: none;
+    height: 1px;
+    background-color: #d1d5db;
+    margin: 35px 0;
+}
+
+/* Result highlight */
+.result-box {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #6d28d9;
+    margin-top: 15px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --------------------------------------------------
+# Load Model & Scaler
+# --------------------------------------------------
+try:
+    model = joblib.load("BHP_Model.pkl")
+    scaler = joblib.load("BHP_Scaler.pkl")
+except:
+    st.error("Model or Scaler file not found.")
+    st.stop()
+
+# --------------------------------------------------
+# Title
+# --------------------------------------------------
+st.title("Boston House Price Prediction")
+st.markdown(
+    "<div class='subtitle'>Enter property details to estimate house value</div>",
+    unsafe_allow_html=True
+)
 
 st.divider()
 
-LSTAT = st.number_input("LSTAT (Percentage of lower status of the population)", min_value=0.0, value=12.5)
-INDUS = st.number_input("INDUS (Proportion of non-retail business acres per town)", min_value=0.0, value=7.5)
-NOX = st.number_input("NOX (Nitric oxides concentration (parts per 10 million))", min_value=0.0, value=0.5)
-PTRATIO = st.number_input("PTRATIO (Pupil-teacher ratio by town)", min_value=0.0, value=18.0)
-RM = st.number_input("RM (Average number of rooms per dwelling)", min_value=0.0, value=6.0)
-TAX = st.number_input("TAX (Full-value property-tax rate per $10,000)", min_value=0.0, value=300.0)
-DIS = st.number_input("DIS (Weighted distances to five Boston employment centres)", min_value=0.0, value=5.0)
-AGE = st.number_input("AGE (Proportion of owner-occupied units built prior to 1940)", min_value=0.0, value=65.0)
+# --------------------------------------------------
+# Inputs (2-Column Layout)
+# --------------------------------------------------
+col1, col2 = st.columns(2)
 
-if st.button("Predict"):
-    input_data = pd.DataFrame([{
-        "LSTAT": LSTAT,
-        "INDUS": INDUS,
-        "NOX": NOX,
-        "PTRATIO": PTRATIO,
-        "RM": RM,
-        "TAX": TAX,
-        "DIS": DIS,
-        "AGE": AGE
-    }])
+with col1:
+    LSTAT = st.number_input("LSTAT (Lower status %)", min_value=0.0, value=12.5)
+    NOX = st.number_input("NOX (Nitric oxides)", min_value=0.0, value=0.5)
+    RM = st.number_input("RM (Avg rooms)", min_value=0.0, value=6.0)
+    DIS = st.number_input("DIS (Distance to employment)", min_value=0.0, value=5.0)
 
-    scaled_data = scaler.transform(input_data)
-    prediction = model.predict(scaled_data)[0]
+with col2:
+    INDUS = st.number_input("INDUS (Non-retail business acres)", min_value=0.0, value=7.5)
+    PTRATIO = st.number_input("PTRATIO (Pupil-teacher ratio)", min_value=0.0, value=18.0)
+    TAX = st.number_input("TAX (Property tax)", min_value=0.0, value=300.0)
+    AGE = st.number_input("AGE (Old houses %)", min_value=0.0, value=65.0)
 
-    st.subheader(f"Prediction : '{(prediction*1000):.2f} USD'")
+# --------------------------------------------------
+# Prediction
+# --------------------------------------------------
+if st.button("Predict House Price"):
 
-    if prediction > 0 and prediction < 50:
-        st.success("The predicted house price seems reasonable.")
-    elif prediction >= 50:
-        st.warning("The predicted house price is quite high, please verify the inputs.")
-    else:
-        st.error("The predicted house price is invalid, please check the input values.")
+    input_data = pd.DataFrame([[ 
+        LSTAT, INDUS, NOX, PTRATIO, RM, TAX, DIS, AGE
+    ]], columns=[
+        "LSTAT", "INDUS", "NOX", "PTRATIO", "RM", "TAX", "DIS", "AGE"
+    ])
 
+    try:
+        scaled_data = scaler.transform(input_data)
+        prediction = model.predict(scaled_data)[0]
+
+        st.divider()
+        st.markdown(
+            f"<div class='result-box'>Predicted Price: ${prediction * 1000:,.2f} USD</div>",
+            unsafe_allow_html=True
+        )
+
+        if 0 < prediction < 50:
+            st.success("The predicted house price looks reasonable.")
+        elif prediction >= 50:
+            st.warning("The predicted house price is quite high.")
+        else:
+            st.error("Invalid prediction.")
+
+    except Exception as e:
+        st.error("Prediction failed.")
+        st.code(str(e))
+
+# --------------------------------------------------
+# Footer
+# --------------------------------------------------
 st.caption("Developed using Streamlit | Boston Housing Dataset")
