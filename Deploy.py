@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Violet Theme + FIXED INPUT CONTROLS
+# Theme & UI Fixes
 # --------------------------------------------------
 st.markdown("""
 <style>
@@ -26,8 +26,8 @@ h1 {
     color: #6d28d9;
     text-align: center;
     font-weight: 900;
-    font-size: 50px;
-    margin-bottom: 4px;
+    font-size: 52px;
+    margin-bottom: 5px;
 }
 
 /* Subtitle */
@@ -42,49 +42,36 @@ h1 {
 label {
     color: black !important;
     font-weight: 600;
-    font-size: 15px;
 }
 
-/* Input field */
+/* Input boxes */
 .stNumberInput input {
     background-color: #6d28d9 !important;
     color: white !important;
     border-radius: 10px;
-    border: 2px solid #6d28d9;
+    border: none;
     padding: 12px;
     font-size: 15px;
 }
 
-/* Focus effect */
-.stNumberInput input:focus {
-    outline: none !important;
-    border: 2px solid black !important;
-}
-
-/* + and - buttons (VISIBLE FIX) */
+/* + and - buttons */
 .stNumberInput button {
     background-color: black !important;
     color: white !important;
     border-radius: 6px;
-    border: none;
-}
-
-/* Hover on + - */
-.stNumberInput button:hover {
-    background-color: #111 !important;
 }
 
 /* Predict button */
 .stButton > button {
-    width: 60%;
+    width: 70%;
+    height: 3.6em;
     display: block;
-    margin: 30px auto;
+    margin: 35px auto;
     background-color: black;
     color: white;
-    font-size: 20px;
-    font-weight: 700;
-    border-radius: 10px;
-    height: 3.2em;
+    font-size: 22px;
+    font-weight: 800;
+    border-radius: 12px;
     letter-spacing: 0.5px;
 }
 
@@ -92,21 +79,13 @@ label {
     background-color: #111;
 }
 
-/* Divider */
-hr {
-    border: none;
-    height: 1px;
-    background-color: #d1d5db;
-    margin: 35px 0;
-}
-
-/* Result highlight */
+/* Result box */
 .result-box {
     text-align: center;
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 800;
     color: #6d28d9;
-    margin-top: 15px;
+    margin-top: 20px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -133,7 +112,7 @@ st.markdown(
 st.divider()
 
 # --------------------------------------------------
-# Inputs (2-Column Layout)
+# Inputs (2 Columns)
 # --------------------------------------------------
 col1, col2 = st.columns(2)
 
@@ -160,26 +139,29 @@ if st.button("Predict House Price"):
         "LSTAT", "INDUS", "NOX", "PTRATIO", "RM", "TAX", "DIS", "AGE"
     ])
 
-    try:
-        scaled_data = scaler.transform(input_data)
-        prediction = model.predict(scaled_data)[0]
+    scaled_data = scaler.transform(input_data)
+    raw_prediction = model.predict(scaled_data)[0]
 
-        st.divider()
-        st.markdown(
-            f"<div class='result-box'>Predicted Price: ${prediction * 1000:,.2f} USD</div>",
-            unsafe_allow_html=True
+    # ✅ FIX NEGATIVE PREDICTION
+    prediction = max(0, raw_prediction)
+
+    st.divider()
+
+    st.markdown(
+        f"<div class='result-box'>Predicted Price: ${prediction * 1000:,.2f} USD</div>",
+        unsafe_allow_html=True
+    )
+
+    if raw_prediction < 0:
+        st.warning(
+            "The model produced a negative value. "
+            "Displayed price has been adjusted to $0. "
+            "Try more realistic feature values."
         )
-
-        if 0 < prediction < 50:
-            st.success("The predicted house price looks reasonable.")
-        elif prediction >= 50:
-            st.warning("The predicted house price is quite high.")
-        else:
-            st.error("Invalid prediction.")
-
-    except Exception as e:
-        st.error("Prediction failed.")
-        st.code(str(e))
+    elif prediction < 50:
+        st.success("The predicted house price looks reasonable.")
+    else:
+        st.warning("The predicted house price is quite high.")
 
 # --------------------------------------------------
 # Footer
